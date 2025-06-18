@@ -130,9 +130,9 @@
             }
         }
 
-        // Mise à jour initiale + toutes les 1 seconde
+        // Mise à jour initiale + toutes les 5 secondes
         fetchGPSData();
-        setInterval(fetchGPSData, 1000);
+        setInterval(fetchGPSData, 5000);
 
         // Ajouter des marqueurs avec étiquettes permanentes pour chaque établissement
         var customMarker1 = L.marker([25.648591068705205, -100.0856852033863], {
