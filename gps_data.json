@@ -6,16 +6,16 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -100,
-          25.643980132990567
+          -100.07004643907946,
+          25.64921833292275
         ]
       },
       "properties": {
         "bus_number": "1",
         "ligne": "Circuito_Escolar",
         "date": "18/06/2025",
-        "heure": "12:51:32",
-        "timestamp": "2025-06-18T18:51:32.083Z"
+        "heure": "12:52:42",
+        "timestamp": "2025-06-18T18:52:42.708Z"
       }
     }
   ]
