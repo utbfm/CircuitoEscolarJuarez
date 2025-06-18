@@ -100,37 +100,36 @@
         }
 
         // Fonction pour récupérer les données GPS depuis le Google Sheet CSV
-        async function fetchGPSData() {
-            try {
-                const sheetUrl = 'https://docs.google.com/spreadsheets/d/19ktCE0XtzOt7Kbov5hUXRrA9fVxi2VqBT3M86Agj0GI/export?format=csv&gid=2017613525';
-                console.log('Tentative de fetch avec URL:', sheetUrl);
-                const response = await fetch(sheetUrl); // Supprime ?nocache= pour tester
-                console.log('Réponse status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
-                }
-                const text = await response.text();
-                console.log('CSV reçu:', text);
-                const lines = text.trim().split('\n');
-                console.log('Lignes CSV:', lines);
-                if (lines.length < 2) {
-                    throw new Error('Aucune donnée disponible dans le CSV');
-                }
-                const lastLine = lines[lines.length - 1].split(',');
-                console.log('Dernière ligne:', lastLine);
-                const lat = parseFloat(lastLine[5]); // Latitude à l'index 5
-                const lon = parseFloat(lastLine[4]); // Longitude à l'index 4
-                console.log('Coordonnées extraites:', { lat, lon });
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    updateMarker(lat, lon);
-                    console.log('Marqueur mis à jour à:', lat, lon);
-                } else {
-                    console.warn('Coordonnées GPS invalides:', lastLine);
-                }
-            } catch (err) {
-                console.error('Erreur lors de la récupération des coordonnées GPS:', err);
-            }
+async function fetchGPSData() {
+    try {
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/19ktCE0XtzOt7Kbov5hUXRrA9fVxi2VqBT3M86Agj0GI/export?format=csv&gid=2017613525';
+        const response = await fetch(sheetUrl);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
         }
+
+        const text = await response.text();
+        const lines = text.trim().split('\n');
+
+        if (lines.length < 2) {
+            throw new Error('No data available in the CSV');
+        }
+
+        const lastLine = lines[lines.length - 1].split(',');
+        const lat = parseFloat(lastLine[5]); // Assurez-vous que l'index est correct
+        const lon = parseFloat(lastLine[4]); // Assurez-vous que l'index est correct
+
+        if (!isNaN(lat) && !isNaN(lon)) {
+            updateMarker(lat, lon);
+        } else {
+            console.warn('Invalid GPS coordinates:', lastLine);
+        }
+    } catch (err) {
+        console.error('Error fetching GPS coordinates:', err);
+    }
+}
+
 
         // Mise à jour initiale + toutes les 10 secondes
         fetchGPSData();
