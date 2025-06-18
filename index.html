@@ -93,7 +93,7 @@
             if (marker) {
                 marker.setLatLng(coords);
             } else {
-                marker = L.marker(coords).addTo(map);
+                marker = L.marker(coords, { icon: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] }) }).addTo(map);
             }
             map.panTo(coords);
         }
@@ -113,10 +113,9 @@
 
                 // Ignorer la ligne d'en-tête
                 const dataLines = lines.slice(1);
-                const lastLine = dataLines[dataLines.length - 1];
-                const [latStr, lonStr] = lastLine.split(',');
-                const lat = parseFloat(latStr);
-                const lon = parseFloat(lonStr);
+                const lastLine = dataLines[dataLines.length - 1].split(',');
+                const lat = parseFloat(lastLine[4]); // longitude est à l'index 4
+                const lon = parseFloat(lastLine[5]); // latitude est à l'index 5
 
                 console.log('Dernières coordonnées:', lat, lon);
 
@@ -130,9 +129,9 @@
             }
         }
 
-        // Mise à jour initiale + toutes les 5 secondes
+        // Mise à jour initiale + toutes les 1 seconde
         fetchGPSData();
-        setInterval(fetchGPSData, 5000);
+        setInterval(fetchGPSData, 1000);
 
         // Ajouter des marqueurs avec étiquettes permanentes pour chaque établissement
         var customMarker1 = L.marker([25.648591068705205, -100.0856852033863], {
