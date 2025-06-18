@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des bus scolaires - Juárez</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; }
+        body { margin: 0; font-family: Arial, sans-serif; }
+        h1 { text-align: center; margin: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Suivi des bus scolaires - Juárez</h1>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialiser la carte centrée sur Juárez
+        var map = L.map('map').setView([31.7202, -106.4324], 13);
+
+        // Ajouter une couche OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Stocker les marqueurs des bus
+        let busMarkers = {};
+
+        // Fonction pour récupérer et afficher les positions des bus
+        function fetchBusPositions() {
+            fetch('https://raw.githubusercontent.com/utbfm/CircuitoEscolarCamiones/main/gps_data.json')
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur HTTP : " + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    data.features.forEach(feature => {
+                        const busId = feature.properties.bus_number;
+                        const lat = feature.geometry.coordinates[1];
+                        const lng = feature.geometry.coordinates[0];
+                        const ligne = feature.properties.ligne;
+                        const date = feature.properties.date;
+                        const heure = feature.properties.heure;
+
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            if (busMarkers[busId]) {
+                                busMarkers[busId].setLatLng([lat, lng]);
+                                busMarkers[busId].setPopupContent(
+                                    `<b>${busId}</b><br>Ligne: ${ligne}<br>Position: ${lat.toFixed(4)}, ${lng.toFixed(4)}<br>Dernière mise à jour: ${date} ${heure}`
+                                );
+                            } else {
+                                busMarkers[busId] = L.marker([lat, lng])
+                                    .addTo(map)
+                                    .bindPopup(
+                                        `<b>${busId}</b><br>Ligne: ${ligne}<br>Position: ${lat.toFixed(4)}, ${lng.toFixed(4)}<br>Dernière mise à jour: ${date} ${heure}`
+                                    );
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Erreur lors de la récupération des données:', error));
+
+            // Répéter toutes les 5 secondes
+            setTimeout(fetchBusPositions, 5000);
+        }
+
+        // Démarrer la récupération des données
+        fetchBusPositions();
+    </script>
+</body>
+</html>
