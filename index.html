@@ -114,16 +114,18 @@
         addSchoolSymbol(25.604463257832606, -100.10461550597647, '🎓', 'Unidad Académica');
 
         async function fetchRoute(coordinates) {
-            const osrmUrl = `http://router.project-osrm.org/route/v1/driving/`;
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/`;
             const coordinatesString = coordinates.map(coord => coord.join(',')).join(';');
             const url = `${osrmUrl}${coordinatesString}?overview=full`;
 
             try {
+                console.log('Fetching route from:', url);
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error: ${response.status}`);
                 }
                 const data = await response.json();
+                console.log('Route data:', data);
                 const route = data.routes[0].geometry;
                 return decodePolyline(route);
             } catch (err) {
@@ -174,10 +176,41 @@
             [25.64098, -100.056557],
             [25.64181, -100.057367],
             [25.642808, -100.058271],
-           
+            [25.643748, -100.059105],
+            [25.644284, -100.059913],
+            [25.644681, -100.060902],
+            [25.645975, -100.062918],
+            [25.646794, -100.064365],
+            [25.647349, -100.065385],
+            [25.648781, -100.067662],
+            [25.648882, -100.068966],
+            [25.649262, -100.071203],
+            [25.64973, -100.072065],
+            [25.650088, -100.072725],
+            [25.650484, -100.073459],
+            [25.65092, -100.074177],
+            [25.651524, -100.075169],
+            [25.652286, -100.076025],
+            [25.652724, -100.076675],
+            [25.653543, -100.078179],
+            [25.654079, -100.0793],
+            [25.654749, -100.080438],
+            [25.654757, -100.080454],
+            [25.654757, -100.080453],
+            [25.654757, -100.080452],
+            [25.654756, -100.080452],
+            [25.654694, -100.081059],
+            [25.652481, -100.082373],
+            [25.650872, -100.083322],
+            [25.649067, -100.084382],
+            [25.647737, -100.085216],
+            [25.645493, -100.086489],
+            [25.644265, -100.087315],
+            [25.642228, -100.088465],
+            [25.641106, -100.089097],
+            [25.641086, -100.089131],
             [25.640842, -100.089344],
             [25.640471, -100.090491]
-           
         ];
 
         drawRouteOnMap(coordinates);
