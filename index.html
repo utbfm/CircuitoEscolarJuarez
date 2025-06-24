@@ -71,7 +71,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div id="header">SUPERVISIÓN DEL CIRCUITO ESCOLAR JUÁREZ NL</div>
+    <div id="header">SUPERVISIÓN DEL CIRCUITO ESCOLAR JUÁREZ</div>
     <div id="datetime"></div>
     <div id="map"></div>
     <div id="footer">© 2025 UTBFM Juárez N.L.</div>
@@ -83,6 +83,7 @@
             const year = now.getFullYear();
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
+
             const dateTimeStr = `${day}/${month}/${year} ${hours}:${minutes}`;
             document.getElementById('datetime').textContent = dateTimeStr;
         }
@@ -95,6 +96,7 @@
         updateDateTime();
         setInterval(updateDateTime, 60000);
 
+        // Fonction addSchoolSymbol avec taille fixe à 18 px
         function addSchoolSymbol(lat, lon, symbolText, labelText) {
             const size = 18;
             L.marker([lat, lon], {
@@ -107,119 +109,75 @@
             }).addTo(map).bindPopup(labelText);
         }
 
+        // Ajout des symboles école
         addSchoolSymbol(25.63792851629281, -100.04780921128857, '🎓', 'UTBFM');
         addSchoolSymbol(25.649170044873816, -100.0731744270799, '🎓', 'CONALEP');
         addSchoolSymbol(25.64790911216649, -100.08567360597452, '🎓', 'CECYTE');
         addSchoolSymbol(25.6451092046172, -100.08807434460095, '🎓', 'Preparatoria 22');
         addSchoolSymbol(25.604463257832606, -100.10461550597647, '🎓', 'Unidad Académica');
 
-        async function fetchRoute(coordinates) {
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/`;
-            const coordinatesString = coordinates.map(coord => coord.join(',')).join(';');
-            const proxyUrl = `https://cors-anywhere.herokuapp.com/`;
-            const url = `${proxyUrl}${osrmUrl}${coordinatesString}?overview=full`;
+        var markers = {};
+        function updateMarker(lat, lon, busNumber) {
+            const coords = [lat, lon];
+            let markerColor = 'blue';
+            switch(busNumber) {
+                case '1': markerColor = 'blue'; break;
+                case '2': markerColor = 'red'; break;
+                case '3': markerColor = 'green'; break;
+                case '4': markerColor = 'orange'; break;
+                case '5': markerColor = 'black'; break;
+                case '6': markerColor = 'yellow'; break;
+                case '7': markerColor = 'black'; break;
+                case '8': markerColor = 'gold'; break;
+                default: markerColor = 'blue';
+            }
+            if (markers[busNumber]) {
+                markers[busNumber].setLatLng(coords);
+            } else {
+                markers[busNumber] = L.marker(coords, {
+                    icon: L.divIcon({
+                        className: 'bus-icon',
+                        html: `<div style="position: relative; text-align: center;">
+                                <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png" style="width: 25px; height: 41px;">
+                                <span class="bus-label" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">${busNumber}</span>
+                              </div>`,
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map);
+            }
+        }
 
+        async function fetchGPSData() {
             try {
-                console.log('Fetching route from:', url);
-                const response = await fetch(url, {
-                    headers: {
-                        'Origin': window.location.origin
-                    }
-                });
-
+                const sheetUrl = 'https://docs.google.com/spreadsheets/d/19ktCE0XtzOt7Kbov5hUXRrA9fVxi2VqBT3M86Agj0GI/export?format=csv&gid=830672969';
+                
+                const response = await fetch(sheetUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error: ${response.status}`);
                 }
-                const data = await response.json();
-                console.log('Route data:', data);
-                const route = data.routes[0].geometry;
-                return decodePolyline(route);
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+                if (lines.length < 2) {
+                    throw new Error('No data available in the CSV');
+                }
+                lines.slice(1).forEach(line => {
+                    const [, , ligne, busNumber, lat, lon] = line.split(',');
+                    const latitude = parseFloat(lat);
+                    const longitude = parseFloat(lon);
+                    if (!isNaN(latitude) && !isNaN(longitude)) {
+                        updateMarker(latitude, longitude, busNumber);
+                    } else {
+                        console.warn('Invalid GPS coordinates:', line);
+                    }
+                });
             } catch (err) {
-                console.error('Error fetching route:', err);
+                console.error('Error fetching GPS coordinates:', err);
             }
         }
 
-        function decodePolyline(polyline) {
-            let index = 0, lat = 0, lng = 0, points = [];
-            const shift = 0x20, mask = ~shift;
-
-            for (let i = 0; i < polyline.length; i++) {
-                let byte, sum = 0, shiftCount = 0;
-                do {
-                    byte = polyline.charCodeAt(index++) - 63;
-                    sum |= (byte & mask) << shiftCount;
-                    shiftCount += 5;
-                } while (byte >= shift);
-
-                const delta = (sum & 1) ? ~(sum >> 1) : (sum >> 1);
-                lat += delta;
-                sum = 0; shiftCount = 0;
-                do {
-                    byte = polyline.charCodeAt(index++) - 63;
-                    sum |= (byte & mask) << shiftCount;
-                    shiftCount += 5;
-                } while (byte >= shift);
-
-                const deltaLng = (sum & 1) ? ~(sum >> 1) : (sum >> 1);
-                lng += deltaLng;
-                points.push([lat / 1e5, lng / 1e5]);
-            }
-            return points;
-        }
-
-        async function drawRouteOnMap(coordinates) {
-            const routeCoordinates = await fetchRoute(coordinates);
-            if (routeCoordinates) {
-                L.polyline(routeCoordinates, {color: 'blue'}).addTo(map);
-            }
-        }
-
-        const coordinates = [
-            [25.638644282181144, -100.0475409887724],
-            [25.639155, -100.052001],
-            [25.639859, -100.053821],
-            [25.640219, -100.054835],
-            [25.64098, -100.056557],
-            [25.64181, -100.057367],
-            [25.642808, -100.058271],
-            [25.643748, -100.059105],
-            [25.644284, -100.059913],
-            [25.644681, -100.060902],
-            [25.645975, -100.062918],
-            [25.646794, -100.064365],
-            [25.647349, -100.065385],
-            [25.648781, -100.067662],
-            [25.648882, -100.068966],
-            [25.649262, -100.071203],
-            [25.64973, -100.072065],
-            [25.650088, -100.072725],
-            [25.650484, -100.073459],
-            [25.65092, -100.074177],
-            [25.651524, -100.075169],
-            [25.652286, -100.076025],
-            [25.652724, -100.076675],
-            [25.653543, -100.078179],
-            [25.654079, -100.0793],
-            [25.654749, -100.080438],
-            [25.654757, -100.080454],
-            [25.654757, -100.080453],
-            [25.654757, -100.080452],
-            [25.654756, -100.080452],
-            [25.654694, -100.081059],
-            [25.652481, -100.082373],
-            [25.650872, -100.083322],
-            [25.649067, -100.084382],
-            [25.647737, -100.085216],
-            [25.645493, -100.086489],
-            [25.644265, -100.087315],
-            [25.642228, -100.088465],
-            [25.641106, -100.089097],
-            [25.641086, -100.089131],
-            [25.640842, -100.089344],
-            [25.640471, -100.090491]
-        ];
-
-        drawRouteOnMap(coordinates);
+        fetchGPSData();
+        setInterval(fetchGPSData, 1000);
     </script>
 </body>
 </html>
